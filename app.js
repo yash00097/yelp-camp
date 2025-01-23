@@ -9,6 +9,7 @@ import ExpressError from './utils/ExpressError.js';
 import campgroundRoutes from './routes/campgrounds.route.js';
 import reviewRoutes from './routes/reviews.route.js';
 import session from 'express-session';
+import flash from 'connect-flash';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,6 +22,9 @@ app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride('_method'));
 app.use(express.static(path.join(__dirname, 'public')));
 
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "/views"));
+
 const sessionConfig = {
     secret: 'thisshouldbeabdsfsecret!',
     resave: false,
@@ -32,9 +36,13 @@ const sessionConfig = {
     }
 }
 app.use(session(sessionConfig));
+app.use(flash());
 
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "/views"));
+app.use((req, res, next) => {
+    res.locals.success = req.flash('success');
+    res.locals.error = req.flash('error');
+    next();
+});
 
 app.use('/campgrounds', campgroundRoutes);
 app.use('/campgrounds/:id/reviews', reviewRoutes);

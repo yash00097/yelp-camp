@@ -14,6 +14,7 @@ import flash from 'connect-flash';
 import passport from 'passport';
 import LocalStrategy from 'passport-local';
 import {User} from './models/user.model.js';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -45,6 +46,37 @@ app.use(flash());
 app.use(passport.initialize());
 app.use(passport.session());
 passport.use(new LocalStrategy(User.authenticate()));
+// Configure Google OAuth Strategy
+passport.use(
+    new GoogleStrategy(
+        {
+            clientID: process.env.GOOGLE_CLIENT_ID, // Add your Google Client ID
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET, // Add your Google Client Secret
+            callbackURL: 'http://localhost:3000/auth/google/callback', // Change if your app runs on a different domain/port
+        },
+        async (accessToken, refreshToken, profile, done) => {
+            try {
+                // Check if user already exists in the database
+                let user = await User.findOne({ googleId: profile.id });
+
+                if (!user) {
+                    // If the user doesn't exist, create a new user
+                    user = new User({
+                        googleId: profile.id,
+                        email: profile.emails[0].value,
+                        username: profile.displayName,
+                    });
+                    await user.save();
+                }
+
+                return done(null, user); // Pass the user to serializeUser
+            } catch (err) {
+                return done(err, null);
+            }
+        }
+    )
+);
+
 
 passport.serializeUser(User.serializeUser());
 passport.deserializeUser(User.deserializeUser());

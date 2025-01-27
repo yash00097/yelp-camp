@@ -49,5 +49,24 @@ router.get('/logout', (req, res, next) => {
     });
 }); 
 
+// Google OAuth login route
+router.get(
+    '/auth/google',
+    passport.authenticate('google', {
+        scope: ['profile', 'email'], // Request profile and email from Google
+    })
+);
+
+// Google OAuth callback route
+router.get(
+    '/auth/google/callback',
+    passport.authenticate('google', { failureRedirect: '/login', failureFlash: true }),
+    (req, res) => {
+        req.flash('success', 'Successfully logged in with Google!');
+        res.redirect('/campgrounds'); // Redirect to the desired page after login
+    }
+);
+
+
 
 export default router;
